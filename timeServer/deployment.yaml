@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: time-server
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: time-server
+    spec:
+      containers:
+      - name: time-server
+        image: platform9systems/current-time
+        ports:
+        - containerPort: 3000
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+        - name: confd-volume
+          mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: html-volume
+          configMap:
+            name: nginx-config
+            items:
+              - key: index.html
+                path: index.html
+              - key: timeClient.js
+                path: timeClient.js
+        - name: confd-volume
+          configMap:
+            name: nginx-config
+            items:
+              - key: default.conf
+                path: default.conf
+
+

@@ -1,0 +1,31 @@
+
+{
+    "name": "getCurrentTime",
+    "version": "1.0.0",
+    "author": "Bich C. Le",
+    "contributors": [
+        {
+            "name": "Bich C. Le",
+            "email": "leb@platform9.com"
+        }
+    ],
+    "description": "Demo App that returns current time",
+    "engines": {
+        "node": ">=4.2.2"
+    },
+    "dependencies": {
+        "co": "~4.6.0",
+        "koa": "next",
+        "koa-bodyparser": "~3.0.0",
+        "koa-route": "~3.0.0",
+        "uuid": "~1.4.0",
+        "request-promise": "^1.0.2"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:platform9/pf9-public.git"
+    },
+    "scripts": {
+        "start": "node main.js"
+    }
+}
