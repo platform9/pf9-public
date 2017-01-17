@@ -18,18 +18,24 @@ spec:
           httpGet:
             path: /currentTime
             port: 3000
-          initialDelaySeconds: 10
+          initialDelaySeconds: 2
           timeoutSeconds: 3
         readinessProbe:
           httpGet:
             path: /currentTime
             port: 3000
-          initialDelaySeconds: 10
+          initialDelaySeconds: 2
           timeoutSeconds: 3
       - name: nginx
         image: nginx
         ports:
         - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /index.html
+            port: 80
+          initialDelaySeconds: 3
+          timeoutSeconds: 3
         volumeMounts:
         - name: html-volume
           mountPath: /usr/share/nginx/html
