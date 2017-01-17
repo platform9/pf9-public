@@ -5,9 +5,13 @@
 }) ();
 
 const colors = [
-    'cornsilk',
+    'yellow',
     'aquamarine',
     'lavender',
+    'orange',
+    'royalblue',
+    'orchid',
+    'cadetblue',
     'lavenderblush',
     'mistyrose'
 ];
@@ -50,12 +54,12 @@ function updateTime() {
         }
         setServerDownVisbility(serverDownVisible);
         updateLog(msg, color);
-        setTimeout(updateTime, 1100);
+        setTimeout(updateTime, 333);
     }
-    req.onerror = function () {
+    req.onerror = req.ontimeout = req.onabort = function () {
         updateLog('Request failed with network error', 'whitesmoke');
         setServerDownVisbility(true);
-        setTimeout(updateTime, 1100);
+        setTimeout(updateTime, 333);
     }
 }
 
@@ -68,5 +72,6 @@ function updateLog(msg, color) {
         ul.removeChild(ul.childNodes[0]);
     }
     line.style.background = color;
+    line.style.width = '500px';
     ul.appendChild(line);
 }

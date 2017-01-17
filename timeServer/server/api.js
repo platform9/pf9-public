@@ -14,7 +14,6 @@ const bodyParser = require('koa-bodyparser');
 const utils = require('./utils');
 const rp = require('request-promise');
 const reqAsGen = utils.wrapPromiseFunction(rp);
-const url = 'http://api.timezonedb.com/v2/get-time-zone?key=LXC1VZ6JLOJ1&format=json&by=zone&zone=America/Los_Angeles';
 const hostname = require('os').hostname();
 
 exports.start = function(config) {
@@ -42,12 +41,8 @@ function _wrap(genFunc) {
 
 
 function * genGetCurrentTime(ctx) {
-    const opts = {
-        uri: url,
-        json:true
-    }
-    const timeInfo = yield * reqAsGen(opts);
-    const time = timeInfo.formatted;
+    const date = new Date();
+    const time = date.toLocaleTimeString();
     ctx.body = {
         dateTime: time,
         hostName: hostname
