@@ -13,6 +13,24 @@ const colors = [
     'orchid',
     'cadetblue',
     'lavenderblush',
+    'mistyrose',
+    'yellow',
+    'aquamarine',
+    'lavender',
+    'orange',
+    'royalblue',
+    'orchid',
+    'cadetblue',
+    'lavenderblush',
+    'mistyrose',
+    'yellow',
+    'aquamarine',
+    'lavender',
+    'orange',
+    'royalblue',
+    'orchid',
+    'cadetblue',
+    'lavenderblush',
     'mistyrose'
 ];
 
@@ -20,10 +38,27 @@ const serverToColor = {
 
 };
 
-function setServerDownVisbility(visible) {
-    const el = document.getElementById('serverDown');
-    el.style.visibility = visible? 'visible':'hidden';
+function setServerDown(down) {
+    let el = document.getElementById('serverDown');
+    el.style.display = down? 'inline':'none';
+    el = document.getElementById('serverUp');
+    el.style.display = down? 'none':'inline';
 }
+
+let failureCount = 0;
+const MAX_FAILURES = 2;
+
+function updateServerStatus(succeeded) {
+    if (succeeded) {
+        failureCount = 0;
+        setServerDown(false);
+    } else if (failureCount < MAX_FAILURES) {
+        ++failureCount;
+    } else {
+        setServerDown(true);
+    }
+}
+
 function updateTime() {
     const req = new XMLHttpRequest();
     req.responseType = 'json';
@@ -31,7 +66,7 @@ function updateTime() {
     req.send();
     req.onload = function () {
         let msg;
-        let serverDownVisible = true;
+        let succeeded = false;
         let color = 'whitesmoke';
         if (this.status !== 200) {
             msg = `Request failed with status ${req.status}`;
@@ -41,9 +76,9 @@ function updateTime() {
             const resp = this.response;
             const hostName = resp.hostName;
             msg = `Response: ${resp.dateTime} -- from pod: ${hostName}`;
-            const span = document.getElementsByTagName('span')[0];
+            const span = document.getElementById('time');
             span.innerText = resp.dateTime;
-            serverDownVisible = false;
+            succeeded = true;
             color = serverToColor[hostName];
             if (!color) {
                 color = colors.shift();
@@ -52,13 +87,13 @@ function updateTime() {
                 serverToColor[hostName] = color;
             }
         }
-        setServerDownVisbility(serverDownVisible);
+        updateServerStatus(succeeded);
         updateLog(msg, color);
         setTimeout(updateTime, 333);
     }
     req.onerror = req.ontimeout = req.onabort = function () {
         updateLog('Request failed with network error', 'whitesmoke');
-        setServerDownVisbility(true);
+        updateServerStatus(false);
         setTimeout(updateTime, 333);
     }
 }
