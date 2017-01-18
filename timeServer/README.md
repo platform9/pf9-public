@@ -14,6 +14,8 @@
 - cd nginx-configmap
 - kubectl create configmap nginx-config --from-file=index.html=index.html --from-file=timeClient.js=timeClient.js --from-file=default.conf=default.conf
 - kubectl create -f ../deployment.yaml
+- kubectl create -f ../service.yaml
+
 
 Initially has 1 replica. To scale to more replicas:
 
