@@ -1,0 +1,19 @@
+function show_nodes_by_pod () {
+    for pod in `kubectl get pods|grep time-server|grep Running|cut -f1 -d' '`
+    do
+        node=`kubectl get -o yaml pod $pod|grep hostIP | awk '{print $2}'`
+        echo $pod runs on node: $node
+    done
+}
+
+function show_nodes_by_pod_continuous () {
+    for i in `seq 1 10000` ; do show_nodes_by_pod; echo; sleep 5; done
+}
+
+function worker_nodes () {
+    for i in `seq 1 1000`
+    do
+        kubectl get -l role!=master nodes; echo; sleep 3;
+    done
+}
+
