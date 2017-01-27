@@ -11,7 +11,7 @@ function show_nodes_by_pod_continuous () {
 }
 
 function worker_nodes () {
-    for i in `seq 1 1000`
+    for i in `seq 1 10000`
     do
         kubectl get -l role!=master nodes; echo; sleep 3;
     done

@@ -5,6 +5,7 @@
 }) ();
 
 const colors = [
+    'darkseagreen',
     'yellow',
     'aquamarine',
     'lavender',
@@ -12,26 +13,7 @@ const colors = [
     'royalblue',
     'orchid',
     'cadetblue',
-    'lavenderblush',
-    'mistyrose',
-    'yellow',
-    'aquamarine',
-    'lavender',
-    'orange',
-    'royalblue',
-    'orchid',
-    'cadetblue',
-    'lavenderblush',
-    'mistyrose',
-    'yellow',
-    'aquamarine',
-    'lavender',
-    'orange',
-    'royalblue',
-    'orchid',
-    'cadetblue',
-    'lavenderblush',
-    'mistyrose'
+    'lavenderblush'
 ];
 
 const serverToColor = {
@@ -43,8 +25,14 @@ function setServerDown(down) {
     el.style.display = down? 'inline':'none';
     el = document.getElementById('serverUp');
     el.style.display = down? 'none':'inline';
+    if (down) {
+        const span = document.getElementById('time');
+        span.innerText = '(Unknown)'
+    }
+
 }
 
+let colorIndex = 0;
 let failureCount = 0;
 const MAX_FAILURES = 2;
 
@@ -81,9 +69,8 @@ function updateTime() {
             succeeded = true;
             color = serverToColor[hostName];
             if (!color) {
-                color = colors.shift();
-                if (!color)
-                    color = 'whitesmoke';
+                color = colors[colorIndex];
+                colorIndex = (colorIndex + 1) % colors.length;
                 serverToColor[hostName] = color;
             }
         }
