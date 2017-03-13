@@ -10,6 +10,7 @@
   ],
   "description": "A very very very simple message queue",
   "dependencies": {
+    "utils": "file:../utils",
     "co": "",
     "koa": "next",
     "koa-bodyparser": "~3.0.0",

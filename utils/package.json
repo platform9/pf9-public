@@ -1,0 +1,19 @@
+{
+  "name": "utils",
+  "version": "1.0.0",
+  "author": "Bich C. Le",
+  "contributors": [
+    {
+      "name": "Bich C. Le",
+      "email": "leb@platform9.com"
+    }
+  ],
+  "description": "",
+  "engines": {
+    "node": ">=4.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/platform9/pf9-qbert.git"
+  }
+}

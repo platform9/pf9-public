@@ -11,8 +11,13 @@ const route = require('koa-route');
 const bodyParser = require('koa-bodyparser');
 const log4js = require('log4js');
 const log = log4js.getLogger('api');
+const utils = require('utils');
+var EventEmitter = require('events');
+const TIMEOUT = 10000;
 
 const messages = [];
+const waiters = [];
+
 start();
 
 function apiLogger(log) {
@@ -45,16 +50,36 @@ function start() {
 
 function * genPublishMessage(ctx) {
     log.info('body:', ctx.request.body);
-    messages.push(ctx.request.body);
+    if (waiters.length) {
+        log.info('dequeueing a waiter');
+        const emitter = waiters.shift();
+        emitter.emit('msg', ctx.request.body);
+    } else {
+        messages.push(ctx.request.body);
+    }
     ctx.status = 200;
 }
 
-function * genPullMessage(ctx) {
-    if (!messages.length) {
-        ctx.body = [];
-        return;
+function * genWaitForMessage() {
+    const emitter = new EventEmitter();
+    waiters.push(emitter);
+    const prom = utils.withTimeout(new Promise(promFn), TIMEOUT);
+    return yield * utils.wrapPromiseError(prom);
+
+    function promFn(resolve, reject) {
+        emitter.on('msg', body => resolve(body));
     }
-    ctx.body = [messages.shift()];
+}
+
+function * genPullMessage(ctx) {
+    if (messages.length) {
+        ctx.body = messages.shift();
+    } else try {
+        ctx.body = yield * genWaitForMessage();
+    } catch (e) {
+        log.warn('genPullMessage error:', e.toString());
+        ctx.status = 404;
+    }
 }
 
 function *genGetMessageCount(ctx) {
