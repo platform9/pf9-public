@@ -13,7 +13,8 @@ const log4js = require('log4js');
 const log = log4js.getLogger('api');
 const utils = require('utils');
 var EventEmitter = require('events');
-const TIMEOUT = 10000;
+const TIMEOUT = process.env.TIMEOUT || 10000;
+const LISTEN_PORT = process.env.LISTEN_PORT || 8889;
 
 const messages = [];
 const waiters = [];
@@ -45,7 +46,7 @@ function start() {
     app.use(route.post('/v1/messages', co.wrap(genPublishMessage)));
     app.use(route.get('/v1/messages', co.wrap(genPullMessage)));
     app.use(route.get('/v1/messageCount', co.wrap(genGetMessageCount)));
-    app.listen(8889);
+    app.listen(LISTEN_PORT);
 }
 
 function * genPublishMessage(ctx) {

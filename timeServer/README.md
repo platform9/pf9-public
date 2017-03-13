@@ -6,7 +6,7 @@
 - docker build -t current-time .
 - docker images (make note of image id)
 - docker login (user=platform9systems, pwd=xxx)
-- docker tag <image-id> platform9systems/current-time:latest
+- docker tag image_id platform9systems/current-time:latest
 - docker push platform9systems/current-time
 
 ## Deploying app on kubernetes

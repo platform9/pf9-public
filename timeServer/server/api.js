@@ -4,7 +4,6 @@
 
 'use strict';
 
-const uuid = require('uuid');
 const Koa = require('koa');
 const app = new Koa();
 const apiUtils = require('./apiUtils');
@@ -12,8 +11,6 @@ const co = require('co');
 const route = require('koa-route');
 const bodyParser = require('koa-bodyparser');
 const utils = require('./utils');
-const rp = require('request-promise');
-const reqAsGen = utils.wrapPromiseFunction(rp);
 const hostname = require('os').hostname();
 
 exports.start = function(config) {
