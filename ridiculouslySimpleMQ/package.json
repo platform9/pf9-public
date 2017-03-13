@@ -1,0 +1,19 @@
+{
+  "name": "ridiculouslySimpleMQ",
+  "version": "1.0.0",
+  "author": "Bich C. Le",
+  "contributors": [
+    {
+      "name": "Bich C. Le",
+      "email": "leb@platform9.com"
+    }
+  ],
+  "description": "A very very very simple message queue",
+  "dependencies": {
+    "co": "",
+    "koa": "next",
+    "koa-bodyparser": "~3.0.0",
+    "koa-route": "~3.0.0",
+    "log4js": ""
+  }
+}
