@@ -16,7 +16,7 @@ spec:
         - containerPort: 8889
         readinessProbe:
           httpGet:
-            path: /v1/messageCount
+            path: /v1/topics/requests/messageCount
             port: 8889
           initialDelaySeconds: 5
           timeoutSeconds: 3
