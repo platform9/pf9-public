@@ -12,9 +12,10 @@ const bodyParser = require('koa-bodyparser');
 const log4js = require('log4js');
 const log = log4js.getLogger('api');
 const utils = require('utils');
-var EventEmitter = require('events');
+const EventEmitter = require('events');
 const TIMEOUT = process.env.TIMEOUT || 10000;
 const LISTEN_PORT = process.env.LISTEN_PORT || 8889;
+const LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
 
 const messages = [];
 const waiters = [];
@@ -25,13 +26,16 @@ function apiLogger(log) {
     return co.wrap(function *(ctx, next) {
         const start = new Date();
         try {
-            log.debug('incoming request for', ctx.url);
             yield next();
+            if (ctx.dontLog)
+                return;
             const ms = new Date() - start;
             let errMsg = '';
             if (ctx.status >= 400 && ctx.message)
                 errMsg = '- ' + ctx.message;
-            log.info(`${ctx.method} ${ctx.url} ${ctx.status} - ${ms}ms ${errMsg}`);
+            const nm = messages.length;
+            const nw = waiters.length;
+            log.info(`${ctx.method} ${ctx.url} ${ctx.status} - ${ms}ms ${errMsg} - ${nm} msgs ${nw} waiters`);
         } catch(error) {
             ctx.status = ctx.status || 500;
             log.error(`${ctx.method} ${ctx.url} ${ctx.status} - ${error}`);
@@ -41,6 +45,7 @@ function apiLogger(log) {
 }
 
 function start() {
+    log.setLevel(LOG_LEVEL);
     app.use(apiLogger(log));
     app.use(bodyParser());
     app.use(route.post('/v1/messages', co.wrap(genPublishMessage)));
@@ -65,10 +70,23 @@ function * genWaitForMessage() {
     const emitter = new EventEmitter();
     waiters.push(emitter);
     const prom = utils.withTimeout(new Promise(promFn), TIMEOUT);
-    return yield * utils.wrapPromiseError(prom);
+    try {
+        return yield * utils.wrapPromiseError(prom);
+    } catch (e) {
+        // timeout
+        const i = waiters.indexOf(emitter);
+        if (i < 0)
+            log.warn('Unable to remove waiter after timeout');
+        else {
+            log.debug('Removing waiter after timeout', i);
+            waiters.splice(i, 1);
+        }
+        emitter.removeAllListeners();
+        throw e;
+    }
 
     function promFn(resolve, reject) {
-        emitter.on('msg', body => resolve(body));
+        emitter.once('msg', body => resolve(body));
     }
 }
 
@@ -78,12 +96,13 @@ function * genPullMessage(ctx) {
     } else try {
         ctx.body = yield * genWaitForMessage();
     } catch (e) {
-        log.warn('genPullMessage error:', e.toString());
+        log.debug('genPullMessage error:', e.toString());
         ctx.status = 404;
     }
 }
 
 function *genGetMessageCount(ctx) {
     ctx.body = messages.length;
+    ctx.dontLog = true;
 }
 
