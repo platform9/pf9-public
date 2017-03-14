@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ridic-simple-mq
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ridic-simple-mq
+    spec:
+      containers:
+      - name: ridic-simple-mq
+        image: platform9systems/ridic-simple-mq
+        ports:
+        - containerPort: 8889
+        readinessProbe:
+          httpGet:
+            path: /v1/messageCount
+            port: 8889
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+
