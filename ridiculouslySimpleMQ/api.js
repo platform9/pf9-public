@@ -55,9 +55,9 @@ function start() {
 }
 
 function * genPublishMessage(ctx) {
-    log.info('body:', ctx.request.body);
+    log.debug('body:', ctx.request.body);
     if (waiters.length) {
-        log.info('dequeueing a waiter');
+        log.debug('dequeueing a waiter');
         const emitter = waiters.shift();
         emitter.emit('msg', ctx.request.body);
     } else {
