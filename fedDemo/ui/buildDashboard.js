@@ -1,5 +1,7 @@
 'use strict';
 
+let chart;
+
 (function start() {
     init();
     updateQueueLen();
@@ -37,12 +39,17 @@ function init() {
         }
     ];
     const data = [{
-        label: 'Length',
+        label: 'QueueLength',
         values: values
     }];
-    const chart = $('#queueLength .epoch').epoch(
+    const range = [0,20];
+    chart = $('#queueLength .epoch').epoch(
         {
             type: 'time.line',
+            //range: {
+            //    left: range,
+            //    right: range
+            //},
             axes: ['left','right','bottom'],
             data: data
         }
@@ -52,8 +59,8 @@ function init() {
 function updateQueueLen() {
     const req = new XMLHttpRequest();
     req.responseType = 'json';
-    //req.open('GET', 'https://mq.kube2go.io/v1/topics/requests/messageCount');
-    req.open('GET', 'http://leb-ctos-devel.platform9.sys:8889/v1/topics/requests/messageCount');
+    req.open('GET', 'https://mq.kube2go.io/v1/topics/requests/messageCount');
+    //req.open('GET', 'http://leb-ctos-devel.platform9.sys:8889/v1/topics/requests/messageCount');
     req.send();
     req.onload = function () {
         let msg;
@@ -61,31 +68,17 @@ function updateQueueLen() {
         let color = 'whitesmoke';
         if (this.status !== 200) {
             msg = `Request failed with status ${req.status}`;
-        } else if (!this.response) {
-            msg = 'Request returned null response';
         } else {
-            const resp = this.response;
-            /*
-            const hostName = resp.hostName;
-            msg = `Response: ${resp.dateTime} -- from pod: ${hostName}`;
-            const span = document.getElementById('time');
-            span.innerText = resp.dateTime;
-            succeeded = true;
-            color = serverToColor[hostName];
-            if (!color) {
-                color = colors[colorIndex];
-                colorIndex = (colorIndex + 1) % colors.length;
-                serverToColor[hostName] = color;
-            }
-            */
+            const qlen = Number(this.response);
+            const currentTime = parseInt(new Date().getTime() / 1000);
+            chart.push([{
+                    time: currentTime,
+                    y: qlen
+            }]);
         }
-        updateServerStatus(succeeded);
-        updateLog(msg, color);
         setTimeout(updateQueueLen, 1000);
-    }
+    };
     req.onerror = req.ontimeout = req.onabort = function () {
-        //updateLog('Request failed with network error', 'whitesmoke');
-        //updateServerStatus(false);
         setTimeout(updateQueueLen, 1000);
     }
 }
