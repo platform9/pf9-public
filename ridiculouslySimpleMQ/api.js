@@ -51,10 +51,19 @@ function apiLogger(log) {
     });
 }
 
+function insertCorsHeaders(ctx, next) {
+    return next().then(function () {
+        if (ctx.status >= 200 && ctx.status < 210) {
+            ctx.response.set('Access-Control-Allow-Origin', '*');
+        }
+    });
+}
+
 function start() {
     log.setLevel(LOG_LEVEL);
     app.use(apiLogger(log));
     app.use(bodyParser());
+    app.use(insertCorsHeaders);
     app.use(route.post('/v1/topics/:topic/messages', co.wrap(genPublishMessage)));
     app.use(route.get('/v1/topics/:topic/messages', co.wrap(genPullMessage)));
     app.use(route.get('/v1/topics/:topic/messageCount', co.wrap(genGetMessageCount)));
@@ -113,6 +122,6 @@ function * genPullMessage(ctx, topic) {
 function *genGetMessageCount(ctx, topic) {
     ensureTopic(topic);
     ctx.body = messages[topic].length;
-    ctx.dontLog = true;
+    //ctx.dontLog = true;
 }
 
