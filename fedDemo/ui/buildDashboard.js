@@ -1,9 +1,12 @@
 'use strict';
 
 let chart;
+let commitInterval = -1;
+const MQ_SERVER = 'https://mq.kube2go.io';
 
 (function start() {
     init();
+    commit();
     updateQueueLen();
 }) ();
 
@@ -54,12 +57,52 @@ function init() {
             data: data
         }
     );
+    const inputBox = document.getElementById('commitsPerMin');
+    const submitBtn = document.getElementById('submit');
+    inputBox.oninput = function () {
+        let val = parseInt(inputBox.value);
+        if (val > 60)
+            inputBox.value = val = 60;
+        submitBtn.disabled = false;
+    };
+    submitBtn.onclick = function () {
+        commitInterval = 1000 * 60 / parseInt(inputBox.value);
+        submitBtn.disabled = true;
+    }
+}
+
+function commit() {
+    if (commitInterval < 0) {
+        setTimeout(commit, 2000);
+        return
+    }
+    let interval = commitInterval;
+    const req = new XMLHttpRequest();
+    req.responseType = 'json';
+    req.open('POST', `${MQ_SERVER}/v1/topics/requests/messages`);
+    //req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    const body = {gitRef: 'unknown', id: 'someId'};
+    req.send();
+    //req.send(JSON.stringify(body));
+
+    req.onerror = req.ontimeout = req.onabort = function (err) {
+        setTimeout(commit, interval);
+    };
+    req.onload = function () {
+        let msg;
+        if (this.status !== 200) {
+            console.error(`commit request failed with status ${req.status}`);
+        } else {
+            console.log('commit request succeeded');
+        }
+        setTimeout(commit, interval);
+    };
 }
 
 function updateQueueLen() {
     const req = new XMLHttpRequest();
     req.responseType = 'json';
-    req.open('GET', 'https://mq.kube2go.io/v1/topics/requests/messageCount');
+    req.open('GET', `${MQ_SERVER}/v1/topics/requests/messageCount`);
     //req.open('GET', 'http://leb-ctos-devel.platform9.sys:8889/v1/topics/requests/messageCount');
     req.send();
     req.onload = function () {

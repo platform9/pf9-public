@@ -23,14 +23,16 @@
 </head>
 <body>
 
-<h1>Successful builds:<span id="successes"></span></h1>
+<h1>Build Dashboard</h1>
 
 <div id="queueLength">
     <h3>Job Queue Length</h3>
     <div class="epoch" style="height: 200px; width: 400px;"></div>
 </div>
 
-<ul></ul>
+<p>Commits per minute: <input type="text" id="commitsPerMin" value="0"><input id="submit" type="button" value="submit" disabled="true"></p>
+<p>Successful builds:<span id="successes"></span></p>
+<p>Failed builds:<span id="failed"></span></p>
 
 </body>
 <script defer src="buildDashboard.js"></script>
