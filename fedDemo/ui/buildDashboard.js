@@ -2,7 +2,7 @@
 
 let chart;
 let gauge;
-let commitInterval = -1;
+let commitInterval = 0;
 const stats = {};
 const MQ_SERVER = 'https://mq.kube2go.io';
 const BUILD_RATE_SAMPLING_INTERVAL = 1000;
@@ -11,10 +11,10 @@ const BUILD_RATE_RATIO = 60000 / BUILD_RATE_SAMPLING_INTERVAL / BUILD_RATE_SAMPL
 const buildRateSamples = [];
 let buildRateSum = 0;
 let lastSample;
+let commitTimer;
 
 (function start() {
     init();
-    commit();
     updateQueueLen();
     pollStat('success');
     pollStat('failure');
@@ -64,14 +64,16 @@ function init() {
         let val = parseInt(inputBox.value);
         if (val > 60)
             inputBox.value = 60;
-        if (val < 1)
-            inputBox.value = 1;
+        if (val < 0)
+            inputBox.value = 0;
         submitBtn.disabled = false;
     };
     submitBtn.onclick = function () {
-        commitInterval = 1000 * 60 / parseInt(inputBox.value);
+        const val = parseInt(inputBox.value);
+        commitInterval = val? 1000 * 60 / val : 0;
         submitBtn.disabled = true;
-    }
+        commit();
+    };
     gauge = $('#gauge .epoch').epoch(
         {
             type: 'time.gauge',
@@ -82,10 +84,16 @@ function init() {
     );
 }
 
+function cancelTimer() {
+    if (commitTimer !== undefined)
+        clearTimeout(commitTimer);
+    commitTimer = undefined;
+}
+
 function commit() {
-    if (commitInterval < 0) {
-        setTimeout(commit, 2000);
-        return
+    cancelTimer();
+    if (!commitInterval) {
+        return;
     }
     let interval = commitInterval;
     const req = new XMLHttpRequest();
@@ -97,16 +105,17 @@ function commit() {
     //req.send(JSON.stringify(body));
 
     req.onerror = req.ontimeout = req.onabort = function (err) {
-        setTimeout(commit, interval);
+        cancelTimer();
+        commitTimer = setTimeout(commit, interval);
     };
     req.onload = function () {
-        let msg;
         if (this.status !== 200) {
             console.error(`commit request failed with status ${req.status}`);
         } else {
             console.log('commit request succeeded');
         }
-        setTimeout(commit, interval);
+        cancelTimer();
+        commitTimer = setTimeout(commit, interval);
     };
 }
 
