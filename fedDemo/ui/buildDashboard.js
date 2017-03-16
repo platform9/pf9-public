@@ -1,9 +1,16 @@
 'use strict';
 
 let chart;
+let gauge;
 let commitInterval = -1;
 const stats = {};
 const MQ_SERVER = 'https://mq.kube2go.io';
+const BUILD_RATE_SAMPLING_INTERVAL = 1000;
+const BUILD_RATE_SAMPLES = 20;
+const BUILD_RATE_RATIO = 60000 / BUILD_RATE_SAMPLING_INTERVAL / BUILD_RATE_SAMPLES; // 3
+const buildRateSamples = [];
+let buildRateSum = 0;
+let lastSample;
 
 (function start() {
     init();
@@ -11,7 +18,27 @@ const MQ_SERVER = 'https://mq.kube2go.io';
     updateQueueLen();
     pollStat('success');
     pollStat('failure');
+    updateBuildRate();
 }) ();
+
+function updateBuildRate() {
+    const curSample = stats['success'] || 0;
+    if (lastSample === undefined) {
+        lastSample = curSample;
+        setTimeout(updateBuildRate, BUILD_RATE_SAMPLING_INTERVAL);
+        return;
+    }
+    const curDelta = curSample - lastSample;
+    lastSample = curSample;
+    if (buildRateSamples.length >= BUILD_RATE_SAMPLES) {
+        buildRateSum -= buildRateSamples.shift();
+    }
+    buildRateSum += curDelta;
+    buildRateSamples.push(curDelta);
+    const buildsPerMinute = buildRateSum * BUILD_RATE_RATIO;
+    gauge.push(buildsPerMinute);
+    setTimeout(updateBuildRate, BUILD_RATE_SAMPLING_INTERVAL);
+}
 
 function init() {
     const values = [];
@@ -36,13 +63,23 @@ function init() {
     inputBox.oninput = function () {
         let val = parseInt(inputBox.value);
         if (val > 60)
-            inputBox.value = val = 60;
+            inputBox.value = 60;
+        if (val < 1)
+            inputBox.value = 1;
         submitBtn.disabled = false;
     };
     submitBtn.onclick = function () {
         commitInterval = 1000 * 60 / parseInt(inputBox.value);
         submitBtn.disabled = true;
     }
+    gauge = $('#gauge .epoch').epoch(
+        {
+            type: 'time.gauge',
+            value: 0,
+            domain: [0, 60],
+            format: v => v.toFixed(1)
+        }
+    );
 }
 
 function commit() {
@@ -78,8 +115,8 @@ function pollStat(statName) {
     req.responseType = 'json';
     req.open('GET', `${MQ_SERVER}/v1/topics/${statName}/messages`);
     req.send();
-    let interval = 1000;
     req.onload = function () {
+        let interval = 1000;
         if (this.status !== 200) {
             const msg = `obtaining stat ${statName} failed with status ${req.status}`;
             console.warn(msg);
@@ -125,44 +162,4 @@ function updateQueueLen() {
     req.onerror = req.ontimeout = req.onabort = function () {
         setTimeout(updateQueueLen, 1000);
     }
-}
-
-function setServerDown(down) {
-    let el = document.getElementById('serverDown');
-    el.style.display = down? 'inline':'none';
-    el = document.getElementById('serverUp');
-    el.style.display = down? 'none':'inline';
-    if (down) {
-        const span = document.getElementById('time');
-        span.innerText = '(Unknown)'
-    }
-
-}
-
-let colorIndex = 0;
-let failureCount = 0;
-const MAX_FAILURES = 2;
-
-function updateServerStatus(succeeded) {
-    if (succeeded) {
-        failureCount = 0;
-        setServerDown(false);
-    } else if (failureCount < MAX_FAILURES) {
-        ++failureCount;
-    } else {
-        setServerDown(true);
-    }
-}
-
-function updateLog(msg, color) {
-    const uls = document.getElementsByTagName('ul');
-    const ul = uls[0];
-    const line = document.createElement('li');
-    line.innerText = msg;
-    if (ul.childNodes.length >= 9) {
-        ul.removeChild(ul.childNodes[0]);
-    }
-    line.style.background = color;
-    line.style.width = '500px';
-    ul.appendChild(line);
 }
