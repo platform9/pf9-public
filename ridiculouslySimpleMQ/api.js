@@ -53,9 +53,7 @@ function apiLogger(log) {
 
 function insertCorsHeaders(ctx, next) {
     return next().then(function () {
-        if (ctx.status >= 200 && ctx.status < 210) {
-            ctx.response.set('Access-Control-Allow-Origin', '*');
-        }
+        ctx.response.set('Access-Control-Allow-Origin', '*');
     });
 }
 
