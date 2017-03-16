@@ -2,45 +2,19 @@
 
 let chart;
 let commitInterval = -1;
+const stats = {};
 const MQ_SERVER = 'https://mq.kube2go.io';
 
 (function start() {
     init();
     commit();
     updateQueueLen();
+    pollStat('success');
+    pollStat('failure');
 }) ();
 
 function init() {
-    const values = [
-        {
-            time: 2,
-            y: 1
-        },
-        {
-            time: 3,
-            y: 3
-        },
-        {
-            time: 5,
-            y: 2
-        },
-        {
-            time: 6,
-            y: 4
-        },
-        {
-            time: 7,
-            y: 5
-        },
-        {
-            time: 8,
-            y: 3
-        },
-        {
-            time: 9,
-            y: 4
-        }
-    ];
+    const values = [];
     const data = [{
         label: 'QueueLength',
         values: values
@@ -49,10 +23,10 @@ function init() {
     chart = $('#queueLength .epoch').epoch(
         {
             type: 'time.line',
-            //range: {
-            //    left: range,
-            //    right: range
-            //},
+            range: {
+                left: range,
+                right: range
+            },
             axes: ['left','right','bottom'],
             data: data
         }
@@ -99,18 +73,44 @@ function commit() {
     };
 }
 
+function pollStat(statName) {
+    const req = new XMLHttpRequest();
+    req.responseType = 'json';
+    req.open('GET', `${MQ_SERVER}/v1/topics/${statName}/messages`);
+    req.send();
+    let interval = 1000;
+    req.onload = function () {
+        if (this.status !== 200) {
+            const msg = `obtaining stat ${statName} failed with status ${req.status}`;
+            console.warn(msg);
+        } else {
+            if (typeof(stats[statName]) === 'undefined')
+                stats[statName] = 0;
+            ++stats[statName];
+            const el = document.getElementById(statName);
+            if (el)
+                el.innerText = stats[statName];
+            interval = 0;
+        }
+        setTimeout(() => pollStat(statName), interval);
+    };
+    req.onerror = req.ontimeout = req.onabort = function () {
+        const msg = `obtaining stat ${statName} failed early`;
+        console.warn(msg);
+        setTimeout(() => pollStat(statName), 1000);
+    }
+}
+
+
 function updateQueueLen() {
     const req = new XMLHttpRequest();
     req.responseType = 'json';
     req.open('GET', `${MQ_SERVER}/v1/topics/requests/messageCount`);
-    //req.open('GET', 'http://leb-ctos-devel.platform9.sys:8889/v1/topics/requests/messageCount');
     req.send();
     req.onload = function () {
-        let msg;
-        let succeeded = false;
-        let color = 'whitesmoke';
         if (this.status !== 200) {
-            msg = `Request failed with status ${req.status}`;
+            const msg = `Request failed with status ${req.status}`;
+            console.warn(msg);
         } else {
             const qlen = Number(this.response);
             const currentTime = parseInt(new Date().getTime() / 1000);
@@ -118,6 +118,7 @@ function updateQueueLen() {
                     time: currentTime,
                     y: qlen
             }]);
+            document.getElementById('qLen').innerText = qlen;
         }
         setTimeout(updateQueueLen, 1000);
     };
