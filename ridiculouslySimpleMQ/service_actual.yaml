@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ridic-simple-mq
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-west-1:677565101248:certificate/b1f733e1-0e82-49b2-b13a-1609b27824eb
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+spec:
+  ports:
+  - port: 443
+    targetPort: 8889
+    protocol: TCP
+  selector:
+    app: ridic-simple-mq
+  type: LoadBalancer
+

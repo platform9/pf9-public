@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fedtime4
+spec:
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: time-server
+    spec:
+      containers:
+      - name: time-server
+        image: platform9systems/current-time
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /currentTime
+            port: 3000
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /index.html
+            port: 80
+          initialDelaySeconds: 3
+          timeoutSeconds: 3
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+        - name: confd-volume
+          mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: html-volume
+          configMap:
+            name: nginx-config
+            items:
+              - key: index.html
+                path: index.html
+              - key: timeClient.js
+                path: timeClient.js
+        - name: confd-volume
+          configMap:
+            name: nginx-config
+            items:
+              - key: default.conf
+                path: default.conf
+
+
