@@ -15,31 +15,25 @@ app.post('/topics/:topicName', function (req, res) {
     console.log('msg:', msg);
     const topic = req.params.topicName;
     const info = ensureTopicExists(topic);
-    info.msgs.push(msg);
-    info.ev.emit('msg');
-    res.send(`queued msg, new queue length: ${info.msgs.length}\n`);
+    if (info.consumers.length) {
+        const consumer = info.consumers.shift();
+        consumer.send(msg);
+        res.send(`post: responding with msg: ${msg}\n`);
+    } else {
+        info.msgs.push(msg);
+        res.send(`queued msg, new queue length: ${info.msgs.length}\n`);
+    }
 })
 
 app.get('/topics/:topicName', function (req, res) {
     const topic = req.params.topicName;
     const info = ensureTopicExists(topic);
-    if (checkMessageAndRespond())
-        return;
-    info.ev.on('msg', onMsg);
-
-    function checkMessageAndRespond() {
-        if (info.msgs.length) {
-            const msg = info.msgs.shift();
-            console.log(`responding with msg: ${msg}`);
-            res.send(msg);
-            return true;
-        }
-        return false;
+    if (info.msgs.length) {
+        const msg = info.msgs.shift();
+        console.log(`get: responding with msg: ${msg}\n`);
+        return res.send(msg);
     }
-    function onMsg() {
-        if (checkMessageAndRespond())
-            info.ev.removeListener('msg', onMsg);
-    }
+    info.consumers.push(res);
 });
 
 function ensureTopicExists(topic) {
@@ -47,7 +41,7 @@ function ensureTopicExists(topic) {
     if (!info)
         info = topics[topic] = {
             msgs: [],
-            ev: new EventEmitter()
+            consumers: []
         };
     return info;
 }
