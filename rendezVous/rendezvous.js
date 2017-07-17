@@ -3,6 +3,8 @@ const app = express()
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const topics = {};
+const TIMEOUT = 10000;
+let nextId = 1;
 
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
@@ -15,10 +17,11 @@ app.post('/topics/:topicName', function (req, res) {
     console.log('msg:', msg);
     const topic = req.params.topicName;
     const info = ensureTopicExists(topic);
-    if (info.consumers.length) {
-        const consumer = info.consumers.shift();
-        consumer.send(msg);
-        res.send(`post: responding with msg: ${msg}\n`);
+    if (info.waiters.length) {
+        const waiter = info.waiters.shift();
+        waiter.res.send(msg);
+        clearTimeout(waiter.timeout);
+        res.send(`post: responding to waiter ${waiter.id} with msg: ${msg}\n`);
     } else {
         info.msgs.push(msg);
         res.send(`queued msg, new queue length: ${info.msgs.length}\n`);
@@ -33,7 +36,21 @@ app.get('/topics/:topicName', function (req, res) {
         console.log(`get: responding with msg: ${msg}\n`);
         return res.send(msg);
     }
-    info.consumers.push(res);
+    const waiter = {
+        res: res,
+        timeout: setTimeout(onTimeout, TIMEOUT),
+        id: nextId++
+    };
+    function onTimeout() {
+        const idx = info.waiters.indexOf(waiter);
+        if (idx >= 0) {
+            res.send(`timeout: removed waiter with id ${waiter.id}\n`);
+            info.waiters.splice(idx, 1);
+        } else {
+            res.send(`timeout: waiter ${waiter.id} not found\n`);
+        }
+    }
+    info.waiters.push(waiter);
 });
 
 function ensureTopicExists(topic) {
@@ -41,7 +58,7 @@ function ensureTopicExists(topic) {
     if (!info)
         info = topics[topic] = {
             msgs: [],
-            consumers: []
+            waiters: []
         };
     return info;
 }
