@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fedtime-tls
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: time-server-tls
+    spec:
+      containers:
+      - name: time-server
+        image: platform9systems/current-time
+        ports:
+        - containerPort: 3000
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+        - name: confd-volume
+          mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: html-volume
+          configMap:
+            name: nginx-config-tls
+            items:
+              - key: index.html
+                path: index.html
+              - key: timeClient.js
+                path: timeClient.js
+        - name: confd-volume
+          configMap:
+            name: nginx-config-tls
+            items:
+              - key: default.conf
+                path: default.conf
+              - key: key.pem
+                path: key.pem
+              - key: cert.pem
+                path: cert.pem
+
+
